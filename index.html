@@ -10,24 +10,23 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
-  /* ── 팔레트: 신라호텔 공식 사이트(shillahotels.com) 실측 추출 (2026-07-28) ──
-     버건디 #893D44 · 딥와인 #4D393B · 브론즈 #A38A64 · 잉크 #1C1C1C · 텍스트 #555 */
+  /* 블랙앤화이트 + 신라 버건디 포인트 (BK 지시 2026-07-28) · 버건디 #893D44 = shillahotels.com 실측 */
   :root{
-    --bg:#F8F5F1; --card:#FFFFFF; --ink:#1C1C1C; --sub:#6B625F;
-    --line:rgba(28,28,28,.14); --line-soft:rgba(28,28,28,.07);
-    --brand:#893D44; --brand-deep:#4D393B; --brand-soft:rgba(137,61,68,.09);
-    --bronze:#A38A64; --bronze-soft:rgba(163,138,100,.14);
-    --c-awards:#893D44; --c-fnb:#A38A64; --c-seasonal:#5E7A52; --c-local:#31699E; --c-trade:#7A5C8C;
+    --bg:#FBFBFA; --card:#FFFFFF; --ink:#141414; --sub:#6B6B6B;
+    --line:rgba(20,20,20,.14); --line-soft:rgba(20,20,20,.07);
+    --brand:#893D44; --brand-deep:#141414; --brand-soft:rgba(137,61,68,.07);
+    --bronze:#893D44; --bronze-soft:rgba(137,61,68,.11);
+    --c-awards:#893D44; --c-fnb:#893D44; --c-seasonal:#893D44; --c-local:#893D44; --c-trade:#893D44;
     --live:#2F7D42; --live-bg:rgba(47,125,66,.1);
-    --dim:.45; --shadow:0 1px 2px rgba(77,57,59,.06),0 8px 28px rgba(77,57,59,.07);
+    --dim:.45; --shadow:0 1px 2px rgba(20,20,20,.05),0 8px 28px rgba(20,20,20,.07);
   }
   @media (prefers-color-scheme: dark){
     :root{
-      --bg:#171213; --card:#221A1C; --ink:#EFE7E3; --sub:#A49795;
-      --line:rgba(239,231,227,.16); --line-soft:rgba(239,231,227,.07);
-      --brand:#C87B84; --brand-deep:#D8B9B3; --brand-soft:rgba(200,123,132,.12);
-      --bronze:#C9AE85; --bronze-soft:rgba(201,174,133,.13);
-      --c-awards:#D2848D; --c-fnb:#CDB185; --c-seasonal:#95B786; --c-local:#7FA9D6; --c-trade:#B195C4;
+      --bg:#0E0E0E; --card:#181818; --ink:#F2F0EC; --sub:#9C9C9C;
+      --line:rgba(242,240,236,.16); --line-soft:rgba(242,240,236,.07);
+      --brand:#C87B84; --brand-deep:#F2F0EC; --brand-soft:rgba(200,123,132,.11);
+      --bronze:#C87B84; --bronze-soft:rgba(200,123,132,.13);
+      --c-awards:#C87B84; --c-fnb:#C87B84; --c-seasonal:#C87B84; --c-local:#C87B84; --c-trade:#C87B84;
       --live:#7CC98F; --live-bg:rgba(124,201,143,.13);
       --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 32px rgba(0,0,0,.35);
     }
@@ -93,6 +92,7 @@
   @media (max-width:640px){.month-note{margin-left:0; text-align:left}}
 
   .events{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px}
+  .empty-month{grid-column:1/-1; border:1px dashed var(--line); border-radius:2px; padding:18px 20px; color:var(--sub); font-size:13px; letter-spacing:.02em}
   .ev{background:var(--card); border:1px solid var(--line-soft); border-left:3px solid var(--cat); border-radius:2px;
     padding:16px 18px 15px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:8px}
   .ev.past{opacity:var(--dim)}
@@ -422,7 +422,7 @@ function status(ev){
       document.querySelectorAll('.ev').forEach(el=>el.classList.toggle('hidden',key!=='all'&&el.dataset.cat!==key));
       document.querySelectorAll('.month').forEach(m=>{
         const any=[...m.querySelectorAll('.ev')].some(el=>!el.classList.contains('hidden'));
-        m.style.display=any?'':'none';
+        m.style.display=(key==='all'||any)?'':'none';
       });
     });
     f.appendChild(b);
@@ -439,7 +439,11 @@ function status(ev){
     (byMonth[key]=byMonth[key]||[]).push(ev);
   });
   const root=$('#months');
-  Object.keys(byMonth).sort().forEach(key=>{
+  const allKeys=[];
+  for(let d=new Date(winStart); d<=winEnd; d=new Date(d.getFullYear(), d.getMonth()+1, 1)){
+    allKeys.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+  }
+  allKeys.forEach(key=>{
     const [y,m]=key.split('-').map(Number);
     const meta=MONTH_THEMES[key]||{theme:''};
     const sec=document.createElement('section'); sec.className='month';
@@ -453,7 +457,11 @@ function status(ev){
       </div>
       <div class="events"></div>`;
     const grid=sec.querySelector('.events');
-    byMonth[key].sort((a,b)=>parse(a.s)-parse(b.s)).forEach(ev=>{
+    const evs=byMonth[key]||[];
+    if(evs.length===0){
+      grid.innerHTML='<div class="empty-month">이 달은 예정된 대형 이벤트가 없습니다 — 다음 시즌을 준비하는 구간.</div>';
+    }
+    evs.sort((a,b)=>parse(a.s)-parse(b.s)).forEach(ev=>{
       const st=status(ev);
       const card=document.createElement('article');
       card.className='ev'+(st.k==='past'?' past':'');
